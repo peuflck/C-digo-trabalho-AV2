@@ -1,0 +1,192 @@
+import sqlite3
+import requests
+import tkinter as tk
+from tkinter import messagebox
+
+class CadastroURL:
+    def __init__(self):
+        self.conn = sqlite3.connect('urls.db')
+        self.cursor = self.conn.cursor()
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS urls
+                              (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                              url TEXT)''')
+        self.conn.commit()
+
+    def incluir_url(self, url):
+        self.cursor.execute("INSERT INTO urls (url) VALUES (?)", (url,))
+        self.conn.commit()
+        messagebox.showinfo("Sucesso", "URL adicionada com sucesso!")
+
+    def listar_urls(self):
+        self.cursor.execute("SELECT * FROM urls")
+        urls = self.cursor.fetchall()
+        if urls:
+            url_list = "\n".join([url[1] for url in urls])
+            messagebox.showinfo("URLs cadastradas", url_list)
+        else:
+            messagebox.showinfo("URLs cadastradas", "Nenhuma URL cadastrada.")
+
+    def alterar_url(self, url_antiga, url_nova):
+        self.cursor.execute("UPDATE urls SET url = ? WHERE url = ?", (url_nova, url_antiga))
+        self.conn.commit()
+        if self.cursor.rowcount > 0:
+            messagebox.showinfo("Sucesso", "URL alterada com sucesso!")
+        else:
+            messagebox.showerror("Erro", "URL não encontrada.")
+
+    def excluir_url(self, url):
+        self.cursor.execute("DELETE FROM urls WHERE url = ?", (url,))
+        self.conn.commit()
+        if self.cursor.rowcount > 0:
+            messagebox.showinfo("Sucesso", "URL excluída com sucesso!")
+        else:
+            messagebox.showerror("Erro", "URL não encontrada.")
+
+    def validar_url(self, url):
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                messagebox.showinfo("Status da URL", f"A URL {url} está acessível.")
+            else:
+                messagebox.showinfo("Status da URL", f"A URL {url} está inacessível (status: {response.status_code}).")
+        except requests.exceptions.RequestException:
+            messagebox.showinfo("Status da URL", f"A URL {url} está inacessível.")
+
+    def validar_todas_urls(self):
+        self.cursor.execute("SELECT * FROM urls")
+        urls = self.cursor.fetchall()
+        if urls:
+            for url in urls:
+                self.validar_url(url[1])
+        else:
+            messagebox.showinfo("Status das URLs", "Nenhuma URL cadastrada.")
+
+    def __del__(self):
+        self.conn.close()
+
+
+def tela_boas_vindas():
+    messagebox.showinfo("Bem-vindo", "Bem-vindo ao Cadastro de URLs!\n\nFuncionalidades:\n- Incluir URL\n- Listar URLs cadastradas\n- Alterar URL\n- Excluir URL\n- Validar URL\n- Validar todas as URLs cadastradas")
+
+def incluir_url():
+    url = url_entry.get()
+    if url:
+        cadastro.incluir_url(url)
+        url_entry.delete(0, tk.END)
+    else:
+        messagebox.showerror("Erro", "Por favor, insira uma URL.")
+
+def listar_urls():
+    cadastro.listar_urls()
+
+def alterar_url():
+    url_antiga = url_antiga_entry.get()
+    url_nova = url_nova_entry.get()
+    if url_antiga and url_nova:
+        cadastro.alterar_url(url_antiga, url_nova)
+        url_antiga_entry.delete(0, tk.END)
+        url_nova_entry.delete(0, tk.END)
+    else:
+        messagebox.showerror("Erro", "Por favor, preencha todos os campos.")
+
+def excluir_url():
+    url = url_excluir_entry.get()
+    if url:
+        cadastro.excluir_url(url)
+        url_excluir_entry.delete(0, tk.END)
+    else:
+        messagebox.showerror("Erro", "Por favor, insira uma URL.")
+
+def validar_url():
+    url = url_validar_entry.get()
+    if url:
+        cadastro.validar_url(url)
+        url_validar_entry.delete(0, tk.END)
+    else:
+        messagebox.showerror("Erro", "Por favor, insira uma URL.")
+
+def validar_todas_urls():
+    cadastro.validar_todas_urls()
+
+cadastro = CadastroURL()
+
+# Configuração da janela principal
+window = tk.Tk()
+window.title("Cadastro de URLs")
+
+# Frame para adicionar URL
+frame_incluir = tk.Frame(window)
+frame_incluir.pack(pady=10)
+
+label_url = tk.Label(frame_incluir, text="URL:")
+label_url.grid(row=0, column=0)
+
+url_entry = tk.Entry(frame_incluir, width=30)
+url_entry.grid(row=0, column=1)
+
+btn_incluir = tk.Button(frame_incluir, text="Incluir", command=incluir_url)
+btn_incluir.grid(row=0, column=2)
+
+# Frame para listar URLs
+frame_listar = tk.Frame(window)
+frame_listar.pack(pady=10)
+
+btn_listar = tk.Button(frame_listar, text="Listar URLs", command=listar_urls)
+btn_listar.pack()
+
+# Frame para alterar URL
+frame_alterar = tk.Frame(window)
+frame_alterar.pack(pady=10)
+
+label_url_antiga = tk.Label(frame_alterar, text="URL Antiga:")
+label_url_antiga.grid(row=0, column=0)
+
+url_antiga_entry = tk.Entry(frame_alterar, width=30)
+url_antiga_entry.grid(row=0, column=1)
+
+label_url_nova = tk.Label(frame_alterar, text="URL Nova:")
+label_url_nova.grid(row=1, column=0)
+
+url_nova_entry = tk.Entry(frame_alterar, width=30)
+url_nova_entry.grid(row=1, column=1)
+
+btn_alterar = tk.Button(frame_alterar, text="Alterar", command=alterar_url)
+btn_alterar.grid(row=1, column=2)
+
+# Frame para excluir URL
+frame_excluir = tk.Frame(window)
+frame_excluir.pack(pady=10)
+
+label_url_excluir = tk.Label(frame_excluir, text="URL:")
+label_url_excluir.grid(row=0, column=0)
+
+url_excluir_entry = tk.Entry(frame_excluir, width=30)
+url_excluir_entry.grid(row=0, column=1)
+
+btn_excluir = tk.Button(frame_excluir, text="Excluir", command=excluir_url)
+btn_excluir.grid(row=0, column=2)
+
+# Frame para validar URL
+frame_validar = tk.Frame(window)
+frame_validar.pack(pady=10)
+
+label_url_validar = tk.Label(frame_validar, text="URL:")
+label_url_validar.grid(row=0, column=0)
+
+url_validar_entry = tk.Entry(frame_validar, width=30)
+url_validar_entry.grid(row=0, column=1)
+
+btn_validar = tk.Button(frame_validar, text="Validar", command=validar_url)
+btn_validar.grid(row=0, column=2)
+
+# Frame para validar todas as URLs
+frame_validar_todas = tk.Frame(window)
+frame_validar_todas.pack(pady=10)
+
+btn_validar_todas = tk.Button(frame_validar_todas, text="Validar Todas", command=validar_todas_urls)
+btn_validar_todas.pack()
+
+# Código para exibir a tela de boas-vindas e iniciar o programa
+tela_boas_vindas()
+
+window.mainloop()
